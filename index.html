@@ -1,11 +1,15 @@
+<!-- OSS page hosted at & by: https://github.com/arthurfiorette/coffee-analysis -->
 <!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-    <title>☕ Parser</title>
+    <title>Transformar XLSX</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>☕</text></svg>"
+    />
   </head>
 
   <body>
@@ -16,16 +20,14 @@
     ></script>
 
     <form id="fileForm" onsubmit="event.preventDefault">
-      <h3>Envie o arquivo XLSX para começar...</h3>
-
+      <h1>Envie o arquivo XLSX para começar...</h1>
       <input type="file" name="xlsx" accept=".xlsx" id="fileInput" />
     </form>
 
     <form id="sheetForm" onsubmit="event.preventDefault" style="display: none">
-      <h3>Escolha quais páginas quer usar</h3>
-
+      <h1>Escolha quais páginas quer usar</h1>
       <div id="sheetDiv"></div>
-
+      <br />
       <button type="submit" id="submit">Gerar</button>
     </form>
   </body>
@@ -37,12 +39,6 @@
       .forEach((form) =>
         form.addEventListener('submit', (event) => event.preventDefault())
       );
-
-    // const first_sheet_name = workbook.SheetNames[0];
-    // const worksheet = workbook.Sheets[first_sheet_name];
-    // const json = XLSX.utils.sheet_to_json(worksheet);
-
-    // console.log(json);
   </script>
 
   <script async defer>
@@ -78,18 +74,14 @@
         sheetDiv.appendChild(createPageCheckbox(name));
       }
 
-      sheetForm.addEventListener(
-        'submit',
-        (e) => {
-          e.preventDefault();
+      sheetForm.addEventListener('submit', (e) => {
+        e.preventDefault();
 
-          const checks = sheetDiv.querySelectorAll('input:checked');
-          const selectedSheets = Array.from(checks).map((input) => input.value);
+        const checks = sheetDiv.querySelectorAll('input:checked');
+        const selectedSheets = Array.from(checks).map((input) => input.value);
 
-          parseWorkbook(workbook, selectedSheets);
-        },
-        { once: true }
-      );
+        parseWorkbook(workbook, selectedSheets);
+      });
     }
 
     /**
@@ -126,16 +118,16 @@
       };
 
       /** 
-       * @type {[
-          {
-            sheetName: string;
-            resultRow: Record<string, number>;
-            data: [
-              { 'R. Time': number; Area: number; 'Relative area (%)': number; Name: string }
-            ];
-          }
-        ]}
-      */
+         * @type {[
+            {
+              sheetName: string;
+              resultRow: Record<string, number>;
+              data: [
+                { 'R. Time': number; Area: number; 'Relative area (%)': number; Name: string }
+              ];
+            }
+          ]}
+        */
       const sheets = selectedSheets.map((sheetName) => {
         const worksheet = workbook.Sheets[sheetName];
         const data = XLSX.utils.sheet_to_json(worksheet);
@@ -147,18 +139,20 @@
 
         return {
           sheetName,
-
           // Cria a linha para esta página, caso inexistente
           resultRow: (result[sheetName] ??= {}),
-
           data
         };
       });
 
       for (const { sheetName, data, resultRow } of sheets) {
         for (const sheetRow of data) {
-          // Quando a tabela do excel não tem o nome do elemento, use `Sem nome`;
-          const elementName = sheetRow['Name'] || 'Sem nome';
+          if (!sheetRow['Name']) {
+            // Inclui o não informado quando tiver um elemento sem nome.
+            elements.add((sheetRow['Name'] = 'Não informado'));
+          }
+
+          const elementName = sheetRow['Name'];
           const area = sheetRow['Relative area (%)'];
 
           if (isNaN(Number(sheetRow['R. Time']))) {
@@ -189,15 +183,11 @@
       // Cria o excel e o baixa
       const wb = XLSX.utils.book_new();
 
-      {
-        // Transforma { a: [1, 2] } em [['a', 1, 2]]
-        const array = Object.entries(result).map(([name, row]) => [name, ...row]);
+      // Transforma { a: [1, 2] } em [['a', 1, 2]]
+      const array = Object.entries(result).map(([name, row]) => [name, ...row]);
 
-        const ws = XLSX.utils.json_to_sheet(array);
-        ws['!cols'] = [{ wch: 15 }];
-
-        XLSX.utils.book_append_sheet(wb, ws, 'Resultado');
-      }
+      const ws = XLSX.utils.json_to_sheet(array, { skipHeader: true });
+      XLSX.utils.book_append_sheet(wb, ws, 'Resultado');
 
       XLSX.writeFile(wb, 'result.xlsx');
     }
