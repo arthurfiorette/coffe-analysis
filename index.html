@@ -19,16 +19,22 @@
       crossorigin="anonymous"
     ></script>
 
-    <form id="fileForm" onsubmit="event.preventDefault">
+    <form id="fileForm">
       <h1>Envie o arquivo XLSX para começar...</h1>
-      <input type="file" name="xlsx" accept=".xlsx" id="fileInput" />
+      <input
+        type="file"
+        name="xlsx"
+        accept=".xlsx"
+        id="fileInput"
+        style="font-size: medium"
+      />
     </form>
 
-    <form id="sheetForm" onsubmit="event.preventDefault" style="display: none">
-      <h1>Escolha quais páginas quer usar</h1>
+    <form id="sheetForm" style="display: none">
+      <h1>Quais páginas devemos contabilizar?</h1>
       <div id="sheetDiv"></div>
       <br />
-      <button type="submit" id="submit">Gerar</button>
+      <button type="submit" id="submit" style="font-size: medium">Gerar</button>
     </form>
   </body>
 
@@ -89,6 +95,8 @@
      */
     function createPageCheckbox(name) {
       const wrapper = document.createElement('div');
+
+      wrapper.style.marginTop = '0.25rem';
 
       const checkbox = document.createElement('input');
       checkbox.type = 'checkbox';
@@ -189,7 +197,9 @@
       const ws = XLSX.utils.json_to_sheet(array, { skipHeader: true });
       XLSX.utils.book_append_sheet(wb, ws, 'Resultado');
 
-      XLSX.writeFile(wb, 'result.xlsx');
+      // Write file and then reload the page
+      XLSX.writeFile(wb, 'result.xlsx', { bookType: 'xlsx' });
+      window.location.reload();
     }
   </script>
 </html>
